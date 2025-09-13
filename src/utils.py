@@ -103,15 +103,21 @@ def extract_user_info(text: str) -> Dict[str, Optional[str]]:
     if height_match:
         info['height'] = float(height_match.group(1))
     else:
-        # Try feet and inches format
-        feet_inches = re.search(r'(\d+)\s*(?:feet?|ft|\')\s*(\d+)\s*(?:inches?|in|")', text.lower())
+        # Try feet and inches format - improved to handle "5ft 20" style
+        feet_inches = re.search(r'(\d+)\s*(?:feet?|ft|\')\s*(\d+)\s*(?:inches?|in|")?', text.lower())
         if feet_inches:
             feet = int(feet_inches.group(1))
             inches = int(feet_inches.group(2))
             info['height'] = (feet * 12 + inches) * 2.54  # Convert to cm
+        else:
+            # Try just feet format like "5ft" (assume 0 inches)
+            feet_only = re.search(r'(\d+)\s*(?:feet?|ft)(?:\s|$)', text.lower())
+            if feet_only:
+                feet = int(feet_only.group(1))
+                info['height'] = (feet * 12) * 2.54
 
-    # Extract age
-    age_match = re.search(r'(\d+)\s*(?:years?\s*old|yr|age)', text.lower())
+    # Extract age - improved pattern
+    age_match = re.search(r'(?:i\'?m\s+)?(\d+)(?:\s*(?:years?\s*old|yr|years?|age)|\s*$)', text.lower())
     if age_match:
         info['age'] = int(age_match.group(1))
 
@@ -121,16 +127,16 @@ def extract_user_info(text: str) -> Dict[str, Optional[str]]:
     elif re.search(r'\b(?:female|woman|girl)\b', text.lower()):
         info['gender'] = 'female'
 
-    # Extract activity level
-    if re.search(r'\b(?:sedentary|desk job|no exercise)\b', text.lower()):
+    # Extract activity level - improved patterns
+    if re.search(r'\b(?:sedentary|desk job|no exercise|inactive)\b', text.lower()):
         info['activity'] = 'sedentary'
-    elif re.search(r'\b(?:lightly active|light exercise)\b', text.lower()):
+    elif re.search(r'\b(?:lightly? active|light exercise|some exercise)\b', text.lower()):
         info['activity'] = 'lightly_active'
-    elif re.search(r'\b(?:moderately active|moderate exercise)\b', text.lower()):
+    elif re.search(r'\b(?:moderately? active|moderate exercise|regular exercise)\b', text.lower()):
         info['activity'] = 'moderately_active'
-    elif re.search(r'\b(?:very active|heavy exercise)\b', text.lower()):
+    elif re.search(r'\b(?:very active|heavy exercise|highly? active)\b', text.lower()):
         info['activity'] = 'very_active'
-    elif re.search(r'\b(?:extremely active|athlete)\b', text.lower()):
+    elif re.search(r'\b(?:extremely? active|super active|athlete|intense)\b', text.lower()):
         info['activity'] = 'extremely_active'
 
     # Extract goals
