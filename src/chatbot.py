@@ -48,7 +48,7 @@ class DietChatbot:
 
     def process_message(self, message: str, user_id: str = "default") -> Tuple[str, bool]:
         """
-        Process user message and generate appropriate response.
+        Process user message and generate appropriate response with conversation context.
 
         Args:
             message: User's input message
@@ -60,16 +60,101 @@ class DietChatbot:
         if not validate_user_input(message):
             return ("I'm here to help with nutrition and diet questions. Could you please ask me something about food, nutrition, or healthy eating?", False)
 
+        # Initialize conversation history for user if doesn't exist
+        if user_id not in self.conversation_history:
+            self.conversation_history[user_id] = []
+
+        # Add user message to conversation history
+        self.conversation_history[user_id].append({"role": "user", "content": message})
+
         # Analyze the query using nutrition expert
         analysis = self.nutrition_expert.analyze_user_query(message, user_id)
 
-        # Generate response based on query type
-        response = self._generate_response(message, analysis, user_id)
+        # Check if we have enough info or need to ask follow-up questions
+        response = self._generate_contextual_response(message, analysis, user_id)
+
+        # Add bot response to conversation history
+        self.conversation_history[user_id].append({"role": "assistant", "content": response})
+
+        # Keep conversation history manageable (last 10 messages)
+        if len(self.conversation_history[user_id]) > 20:
+            self.conversation_history[user_id] = self.conversation_history[user_id][-20:]
 
         # Check if disclaimer is needed
         needs_disclaimer = self._needs_disclaimer(analysis['query_type'])
 
         return response, needs_disclaimer
+
+    def _generate_contextual_response(self, message: str, analysis: Dict, user_id: str) -> str:
+        """
+        Generate contextual response that maintains conversation flow.
+        """
+        query_type = analysis['query_type']
+        user_profile = analysis['user_profile']
+        conversation = self.conversation_history[user_id]
+
+        # Check if we're in the middle of gathering user info
+        if len(conversation) >= 2:  # Has previous conversation
+            last_bot_message = conversation[-2]["content"] if len(conversation) >= 2 else ""
+
+            # If bot previously asked for info, and user is providing it
+            if any(phrase in last_bot_message.lower() for phrase in ["i need", "please share", "what's your", "tell me about"]):
+                # User is responding with their info
+                daily_needs = self.nutrition_expert.calculate_daily_needs(user_profile)
+
+                if daily_needs and "error" not in daily_needs:
+                    return self._format_complete_advice(daily_needs, query_type, user_profile)
+                else:
+                    # Still missing info - ask specifically for what's needed
+                    missing_info = daily_needs.get("error", "some information")
+                    return self._ask_for_specific_info(missing_info, user_profile)
+
+        # First time or general query - use original logic
+        return self._generate_response(message, analysis, user_id)
+
+    def _format_complete_advice(self, daily_needs: Dict, query_type: str, user_profile: Dict) -> str:
+        """Format complete nutrition advice with all user data."""
+        advice = f"""Perfect! Based on your information, here's your personalized nutrition plan:
+
+🔥 **Daily Calories**: {daily_needs['target_calories']} calories
+📊 **Macronutrient Breakdown**:
+• Protein: {daily_needs['macros']['protein']}g ({int(daily_needs['macro_ratio']['protein']*100)}%)
+• Carbs: {daily_needs['macros']['carbs']}g ({int(daily_needs['macro_ratio']['carbs']*100)}%)
+• Fat: {daily_needs['macros']['fat']}g ({int(daily_needs['macro_ratio']['fat']*100)}%)
+
+💡 **Your Numbers**:
+• BMR (at rest): {daily_needs['bmr']} calories
+• TDEE (with activity): {daily_needs['tdee']} calories
+
+🎯 **Next Steps**: Would you like meal suggestions, specific recipes, or have questions about these numbers?"""
+
+        return advice
+
+    def _ask_for_specific_info(self, missing_info: str, current_profile: Dict) -> str:
+        """Ask for specific missing information."""
+        have_info = []
+        need_info = []
+
+        if 'age' in current_profile: have_info.append(f"Age: {current_profile['age']}")
+        else: need_info.append("age")
+
+        if 'weight' in current_profile: have_info.append(f"Weight: {current_profile['weight']:.0f} kg")
+        else: need_info.append("weight")
+
+        if 'height' in current_profile: have_info.append(f"Height: {current_profile['height']:.0f} cm")
+        else: need_info.append("height")
+
+        if 'gender' in current_profile: have_info.append(f"Gender: {current_profile['gender']}")
+        else: need_info.append("gender")
+
+        if 'activity' in current_profile: have_info.append(f"Activity: {current_profile['activity']}")
+        else: need_info.append("activity level")
+
+        response = "Thanks! I have: " + ", ".join(have_info) if have_info else "I'm gathering your information."
+        response += f"\n\n🤔 I still need your **{' and '.join(need_info)}** to calculate your personalized nutrition plan."
+        response += f"\n\nCould you tell me your {need_info[0]}?"
+
+        return response
 
     def _generate_response(self, message: str, analysis: Dict, user_id: str) -> str:
         """
