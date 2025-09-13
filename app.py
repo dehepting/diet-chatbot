@@ -102,17 +102,23 @@ class SimpleDietChatbotApp:
 
             # Text input area
             with gr.Row():
-                with gr.Column(scale=4):
-                    text_input = gr.Textbox(
-                        placeholder="Ask me about nutrition, diet plans, calories, or healthy eating...",
-                        label="Your Question",
-                        lines=2,
-                        max_lines=4
-                    )
-
+                text_input = gr.Textbox(
+                    placeholder="Continue the conversation or ask a new question... (Press Enter to send)",
+                    label="💬 Chat with NutriBot",
+                    lines=2,
+                    max_lines=4,
+                    scale=4
+                )
                 with gr.Column(scale=1):
-                    text_submit_btn = gr.Button("Ask NutriBot", variant="primary", size="lg")
+                    text_submit_btn = gr.Button("Send", variant="primary", size="lg")
                     clear_btn = gr.Button("New Conversation", variant="secondary")
+
+            # Conversation help
+            gr.HTML("""
+            <div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                <small><strong>💡 Tip:</strong> Keep chatting! Ask follow-up questions like "What about meal suggestions?" or "Can you adjust for higher activity?"</small>
+            </div>
+            """)
 
             # Example prompts
             gr.HTML("<h3>💡 Try these example questions:</h3>")
