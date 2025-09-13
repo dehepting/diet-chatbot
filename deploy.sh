@@ -10,7 +10,7 @@ fi
 
 COMMIT_MSG="$1"
 GITHUB_DIR="/Users/davidhepting/mess_around_2/diet-chatbot"
-HF_SPACE_DIR="/Users/davidhepting/diet-chatbot"  # Adjust this path to your HF Space
+HF_SPACE_DIR="/Users/davidhepting/diet-chatbot"  # Your HF Space directory
 
 echo "🚀 Deploying NutriBot..."
 
@@ -30,4 +30,5 @@ git commit -m "Deploy: $COMMIT_MSG"
 git push
 
 echo "✅ Deployment complete!"
-echo "🌐 Check your Space: https://huggingface.co/spaces/davidhepting/diet-chatbot"
+echo "📱 GitHub: https://github.com/dehepting/diet-chatbot"
+echo "🌐 Live App: https://huggingface.co/spaces/dehepting/diet-chatbot"
