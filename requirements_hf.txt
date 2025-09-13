@@ -1,0 +1,18 @@
+# Optimized requirements for Hugging Face Spaces deployment
+gradio>=4.0.0
+transformers>=4.30.0
+torch>=2.0.0
+requests>=2.31.0
+numpy>=1.24.0
+
+# Optional dependencies for enhanced functionality
+# (comment out if causing deployment issues)
+datasets>=2.12.0
+accelerate>=0.20.0
+
+# Voice functionality (optional - can be disabled for text-only deployment)
+# speechrecognition>=3.10.0
+# gtts>=2.3.0
+# openai-whisper>=20230314
+# librosa>=0.10.0
+# pyttsx3>=2.90
